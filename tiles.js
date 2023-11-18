@@ -4,31 +4,46 @@
 // last - specifier
 
 
-const fulls = {
-    grass:         ['grass', 'grass', 'grass', 'grass'],
-    water:         ['water', 'water', 'water', 'water'],
-}
+const fulls = [
+    ['grass', 'grass', 'grass', 'grass'],
+    ['water', 'water', 'water', 'water'],
+]
 const fullsAmount = Object.keys(fulls).length;
 
 
-const halves = {
-    grass_water_side:   ['water', 'water', 'grass', 'grass'],
-}
-const halvesAmount = Object.keys(halves).length * 2;
+const halves = [
+    ...dupe(['water', 'water', 'grass', 'grass']),
+]
+const halvesAmount = halves.length;
 
 
-const tiles = {
-    grass_most_water_corner: ['water', 'water', 'water', 'grass'],
-    water_most_grass_corner: ['water', 'grass', 'grass', 'grass'],
-}
-const tilesAmount = Object.keys(tiles).length * 4;
+const tiles = [
+    ...dupe(['water', 'water', 'water', 'grass']),
+    ...dupe(['water', 'grass', 'grass', 'grass']),
+]
+const tilesAmount = tiles.length;
 
 const totalTileAmount = fullsAmount + halvesAmount + tilesAmount;
 
-
+const allTiles = [
+    ...tiles,
+    ...halves,
+    ...fulls
+];
 
 
 const tileColors = {
     grass: "#22DA44",
     water: "#1223AD",
+}
+
+
+
+function dupe(c) {
+    return [
+        [c[0], c[1], c[2], c[3]],
+        [c[1], c[2], c[3], c[0]],
+        [c[2], c[3], c[0], c[1]],
+        [c[3], c[0], c[1], c[2]]
+    ]
 }

@@ -14,6 +14,17 @@ function start() {
     resetHTML();
     setupHTML();
     setupWave();
+
+    setInterval(() => {
+        if(managedTiles.length <= 1) {
+            resetHTML();
+            setupHTML();
+            setupWave();
+        }
+        else {
+            waveStep();
+        }
+    }, 150);
 }
 
 function setupHTML() {
@@ -27,16 +38,13 @@ function setupHTML() {
         for(col = 0; col < config.width; col++) {
             let td = document.createElement("td");
             let div = document.createElement("div");
-            let img = document.createElement("img");
 
             div.id = (row+" "+col);
 
             let val = 100./config.height;
-            img.style.width = val+"vh";
-            img.style.height = val+"vh";
-            // img.style.paddingBottom = "calc(" + val + "vh - "+val+"px)";
+            div.style.width = "calc("+val+"vh - 1px)";
+            div.style.height = div.style.width;
 
-            div.appendChild(img);
             td.appendChild(div);
             tr.appendChild(td);
 
@@ -45,7 +53,7 @@ function setupHTML() {
                 row: row,
                 col: col,
 
-                posibilities: totalTileAmount,
+                possibilities: [...allTiles],
                 corners: undefined,
             });
         }
@@ -64,6 +72,8 @@ function resetHTML() {
     while(table.lastChild) {
         table.removeChild(table.lastChild);
     }
+
+    managedTiles = [];
 }
 
 function getTable() {
@@ -81,4 +91,8 @@ function getTile(row, col) {
         }
     }
     return undefined;
+}
+
+function randomInt(max) {
+    return Math.floor(Math.random() * max);
 }

@@ -20,8 +20,12 @@ body {
     padding-bottom: calc(5vh - 1px);  */
     height: 0;
     padding: 0;
+    border: 1px solid #000;
+    box-sizing: border-box;
 }
 
-#main div img {
-    box-sizing: border-box;
+#main div {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
 }
