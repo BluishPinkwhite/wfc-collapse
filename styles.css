@@ -1,0 +1,29 @@
+body {
+    background-color: aquamarine;
+    overflow: hidden;
+}
+
+#main {
+    position: absolute; 
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    width: max-content;
+    border-collapse: collapse;
+}
+
+
+#main td {
+    border: 1px black solid;
+    box-sizing: content-box;
+    width: 5vh; 
+    padding-bottom: calc(5vh - 1px); 
+    height: 0;
+}
+
+#main div {
+    text-align: center;
+    white-space: nowrap;
+    position: absolute;
+}
