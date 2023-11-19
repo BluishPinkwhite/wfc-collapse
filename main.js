@@ -1,10 +1,9 @@
 
 
-let size = 14;
 
 var config = {
-    height: size,
-    width: size * 2 + 3,
+    height: 14,
+    width: 25,
 }
 
 var d;
@@ -24,7 +23,7 @@ function start() {
         else {
             waveStep();
         }
-    }, 150);
+    }, 25);
 }
 
 function setupHTML() {
