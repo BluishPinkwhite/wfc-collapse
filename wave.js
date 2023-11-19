@@ -89,6 +89,7 @@ function setTileRandom(tile) {
         
             // select random of the lowest tiles
             nextTile = lowestTiles[randomInt(lowestTiles.length)];
+
             // highlight it
             // nextTile.div.style.background = "rgba(200,0,0,0.6)";
         }
@@ -178,6 +179,10 @@ function renderTile(tile) {
     // if tile is waiting to be collapsed
     else {
         tile.div.innerText = tile.possibilities.length || "";
+    }
+
+    if(tile.div.innerText.length > 0) {
+        tile.div.style.background = interpolateColor('#deb887', '#7fffd4', tile.possibilities.length / totalTileAmount * .75);
     }
 }
 
