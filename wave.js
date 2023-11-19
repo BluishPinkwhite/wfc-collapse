@@ -32,6 +32,11 @@ let managedTiles = [];
 // tiles added in order to be replayed from the back (reset and removed in backwards order)
 let replayTiles = [];
 
+// fade
+let fadeAmount = 20;
+let fadeToFull = true;
+let fadeTiles = [];
+
 
 function setupWave() {
     // setup all tiles
@@ -85,7 +90,7 @@ function setTileRandom(tile) {
             // select random of the lowest tiles
             nextTile = lowestTiles[randomInt(lowestTiles.length)];
             // highlight it
-            nextTile.div.style.background = "rgba(200,0,0,0.6)";
+            // nextTile.div.style.background = "rgba(200,0,0,0.6)";
         }
     }
 
@@ -122,11 +127,43 @@ function setTile(tile, corners) {
 
     // add to replay
     replayTiles.push(tile);
+    fadeTiles.unshift(tile);
     
     // recalc possibilities of direct neighbors (which is then recursive)
     for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
         if(neighbor) {
             recalcPossibilities(direction, neighbor);
+        }
+    }
+
+    // handle fading
+    updateFading();
+}
+
+function updateFading() {
+    // iterate through all fading tiles
+    // lower index = younger
+    // last index = oldest
+    for (let i = fadeTiles.length-1; i >= 0; i--) {
+        let fadeTile = fadeTiles[i];
+
+        // set opacity 0-1
+        fadeTile.div.style.opacity = fadeToFull ? 
+            1 - (fadeAmount - fadeTile.fadeIndex) / fadeAmount : 
+            (fadeAmount - fadeTile.fadeIndex)/ fadeAmount;
+
+        // increase fade
+        fadeTile.fadeIndex++;
+
+        // if amount reached, reset and remove it
+        if(fadeTile.fadeIndex >= fadeAmount) {
+            fadeTile.div.style.opacity = 1;
+
+            if(!fadeToFull) {
+                fadeTile.div.style.background = "";
+            }
+
+            fadeTiles.splice(i, 1);
         }
     }
 }

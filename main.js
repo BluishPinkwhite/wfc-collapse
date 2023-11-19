@@ -4,7 +4,7 @@
 
 
 var config = {
-    height: 17,
+    height: 16,
     width: 31,
 }
 
@@ -13,7 +13,7 @@ var d;
 
 var state = "running";
 var countdown = 0;
-var speed = 35;
+var speed = 45;
 
 
 function start() {
@@ -38,16 +38,24 @@ function start() {
         else if(state == "waiting") {
             if(countdown > 0) {
                 countdown--;
+                updateFading();
             }
             else {
                 state = "replaying";
+                fadeTiles = [];
+                fadeToFull = false;
             }
         }
 
         // replaying - removing from last
         else if(state == "replaying") {
             if(replayTiles.length > 0) {
-                replayTiles.pop().div.style.background = "";
+                let fadeTile = replayTiles.pop();
+                fadeTiles.unshift(fadeTile);
+
+                fadeTile.fadeIndex = 0;
+
+                updateFading();
             }
             else {
                 state = "resetting";
@@ -64,8 +72,12 @@ function start() {
         else if(state == "cooldown") {
             if(countdown > 0) {
                 countdown--;
+
+                updateFading();
             }
             else {
+                fadeToFull = true;
+
                 resetHTML();
                 setupHTML();
                 setupWave();
@@ -103,6 +115,8 @@ function setupHTML() {
                 div: div,
                 row: row,
                 col: col,
+
+                fadeIndex: 0,
 
                 possibilities: [...allTiles],
                 corners: undefined,
