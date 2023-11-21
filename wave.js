@@ -182,7 +182,7 @@ function renderTile(tile) {
     }
 
     if(tile.div.innerText.length > 0) {
-        tile.div.style.background = interpolateColor('#deb887', '#7fffd4', tile.possibilities.length / totalTileAmount * .75);
+        tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities.length / totalTileAmount * .75);
     }
 }
 

@@ -48,6 +48,10 @@ const corners = [
 
     ...dupe(['rock', 'grass', 'grass', 'grass', 160]),
     ...dupe(['flower', 'grass', 'grass', 'grass', 250]),
+    
+    ...dupe(['water', 'water', 'water', 'dark_water', 70]),
+
+    ...dupe(['field', 'field', 'field', 'dark_field', 40]),
 ]
 const cornersAmount = corners.length;
 
@@ -74,10 +78,12 @@ const allTiles = [
 const tileColors = {
     grass: "#22DA44",
     water: "#12ABEB",
+    dark_water: "#0188DE",
     rock: "#ABAABA",
     flower: "#DE6554",
     forest: "#239932",
     field: "#DEED44",
+    dark_field: "#FF9812",
     path: "#BB9865",
 }
 
