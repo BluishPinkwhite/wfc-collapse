@@ -3,6 +3,8 @@
 // 19.11.2023
 
 
+var calculations = [0,0,0,0,0,0,0];
+
 var config = {
     height: 16,
     width: 31,
@@ -20,6 +22,15 @@ var d;
 var state = "running";
 var countdown = 0;
 let interval;
+
+let statisticsInterval = setInterval(() => {
+    var f = (index) => {
+        return (calculations[index]).toLocaleString('en-US')
+    }
+
+    console.log(`a sec: (steps: ${f(0)}, renders: ${f(1)}, possibilities: [${f(2)} - ${f(4)}]),\n limitations: ${f(3)} <= (${f(5)} - ${f(6)})\nscore: ${Math.floor(calculations[3]/calculations[2])}`);
+    calculations = [0,0,0,0,0,0,0];
+}, 1000);
 
 
 function start() {

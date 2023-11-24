@@ -5,6 +5,13 @@
 
 window.wallpaperPropertyListener = {
     applyUserProperties: function(properties) {
+
+        // stop logging
+        if(statisticsInterval) {
+            clearInterval(statisticsInterval);
+        }
+
+
         if (properties.backgroundcolor) {
             // Convert the custom color to 0 - 255 range for CSS usage
             let backgroundColor = properties.backgroundcolor.value.split(' ');

@@ -61,6 +61,8 @@ function setupWave() {
 
 function waveStep() {
     setTileRandom(nextTile);
+    
+    calculations[0]++;
 }
 
 
@@ -184,6 +186,8 @@ function renderTile(tile) {
     if(tile.div.innerText.length > 0) {
         tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities.length / totalTileAmount * .75);
     }
+    
+    calculations[1]++;
 }
 
 function recalcPossibilities(direction, tile) {
@@ -196,6 +200,8 @@ function recalcPossibilities(direction, tile) {
         tile.possibilities = [];
         return;
     }
+    
+    calculations[2]++;
 
     // if tile isn't yet managed - start to manage it
     if(!managedTiles.includes(tile)) {
@@ -208,44 +214,57 @@ function recalcPossibilities(direction, tile) {
     // neighbor exists (not over edge)
     if(neighbor) {
         let hasReduced = false;
+        
+        // there are non-zero and non-full possibilities - both cannot affect the result
+        if(neighbor.possibilities.length != totalTileAmount -1) {
 
-        // iterate through neighbors possibilities
-        let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities];
+            // iterate through neighbors possibilities
+            let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities];
 
-        if(neighborLimitations.length > 0) {
+            if(neighborLimitations.length > 0) {
 
-            // iterate through all possible tiles
-            for (let i = tile.possibilities.length-1; i >= 0; i--) {
-                let possibleTile = tile.possibilities[i];
+                // iterate through all possible tiles
+                for (let i = tile.possibilities.length-1; i >= 0; i--) {
+                    let possibleTile = tile.possibilities[i];
 
-                // check if they align
-                let possible = false;
-                
-                // if corners align:
-                // example - this uncollapsed tile north of another tile 
-                //    -> test if some own possibility cannot align with any of the other tile
-                //    -> test bottom's topLeft against top's bottomLeft & bottom's topRight against top's bottomRight
-                // rotated correctly in other directions
+                    // check if they align
+                    let possible = false;
+                    
+                    calculations[5] += neighbor.possibilities.length;
+                    
+                    // if corners align:
+                    // example - this uncollapsed tile north of another tile 
+                    //    -> test if some own possibility cannot align with any of the other tile
+                    //    -> test bottom's topLeft against top's bottomLeft & bottom's topRight against top's bottomRight
+                    // rotated correctly in other directions
 
-                for (let j = neighborLimitations.length-1; j >= 0; j--) {
-                    let limitation = neighborLimitations[j];
+                    for (let j = neighborLimitations.length-1; j >= 0; j--) {
+                        let limitation = neighborLimitations[j];
+                        
+                        calculations[3]++;
 
-                    if(limitation[directions[direction].corners[0]] ==
-                            possibleTile[directions[directions[direction].opposite].corners[0]]
-                        &&
-                        limitation[directions[direction].corners[1]] ==
-                            possibleTile[directions[directions[direction].opposite].corners[1]]
-                        ) {
-                        possible = true;
+                        if(limitation[directions[direction].corners[0]] ==
+                                possibleTile[directions[directions[direction].opposite].corners[0]]
+                            &&
+                            limitation[directions[direction].corners[1]] ==
+                                possibleTile[directions[directions[direction].opposite].corners[1]]
+                            ) {
+                            possible = true;
+                            break;
+                        }
+                    }
+
+                    // no configuration for this possibility with given possibilities of neighbors can fit -> remove it
+                    if(!possible) {
+                        hasReduced = true;
+                        tile.possibilities.splice(i, 1);
                     }
                 }
-
-                // no configuration for this possibility with given possibilities of neighbors can fit -> remove it
-                if(!possible) {
-                    hasReduced = true;
-                    tile.possibilities.splice(i, 1);
-                }
             }
+        }
+        else {
+            calculations[4]++;
+            calculations[6] += neighbor.possibilities.length * tile.possibilities.length;
         }
 
         // if any possibility was removed -> recursively recalc own neighbors
