@@ -3,16 +3,35 @@
 // 19.11.2023
 
 
+var consts = {
+    worker: {
+        START: 100,
+        STEP_COMPLETE: 101,
+        WORKER_FINISHED: 102,
+    },
+    changes: {
+        TILE_SET: 200,
+        TILE_POSSIBILITIES_REDUCED: 201,
+        FINISHED: 202,
+    },
+    simulationState: {
+        VISUALISING: 300,
+        REPLAYING: 301,
+    }
+}
+
+
+
 var calculations = [0,0,0,0,0,0,0];
 
 var config = {
-    height: 16,
-    width: 31,
+    height: 22,
+    width: 39,
 
     backgroundColor: 'rgb(127,255,212)',
     chanceColor: 'rgb(222,184,135)',
 
-    speed: 45,
+    speed: 1000./27,
     countdownMax: 100,
 }
 
@@ -23,20 +42,19 @@ var state = "running";
 var countdown = 0;
 let interval;
 
-let statisticsInterval = setInterval(() => {
-    var f = (index) => {
-        return (calculations[index]).toLocaleString('en-US')
-    }
+// let statisticsInterval = setInterval(() => {
+//     var f = (index) => {
+//         return (calculations[index]).toLocaleString('en-US')
+//     }
 
-    console.log(`a sec: (steps: ${f(0)}, renders: ${f(1)}, possibilities: [${f(2)} - ${f(4)}]),\n limitations: ${f(3)} <= (${f(5)} - ${f(6)})\nscore: ${Math.floor(calculations[3]/calculations[2])}`);
-    calculations = [0,0,0,0,0,0,0];
-}, 1000);
+//     console.log(`a sec: (steps: ${f(0)}, renders: ${f(1)}, possibilities: [${f(2)} - ${f(4)}]),\n limitations: ${f(3)} <= (${f(5)} - ${f(6)})\nscore: ${Math.floor(calculations[3]/calculations[2])}`);
+//     calculations = [0,0,0,0,0,0,0];
+// }, 1000);
 
 
 function start() {
     resetHTML();
     setupHTML();
-    setupWave();
 
     restartInterval();
 }
@@ -105,17 +123,21 @@ function restartInterval() {
     startInterval();
 }
 
+
+
 function startInterval() {
+
     // main simulation loop
     interval = setInterval(() => {
+
         // simulation is generating
         if(state == "running") {
-            if(managedTiles.length == 0) {
+            if(simulationState == consts.simulationState.REPLAYING) {
                 state = "waiting";
                 countdown = config.countdownMax;
             }
             else {
-                waveStep();
+                applyNextChange();
             }
         }
 
@@ -162,10 +184,12 @@ function startInterval() {
             }
             else {
                 fadeToFull = true;
+                
+                simulationState = consts.simulationState.VISUALISING;
 
                 resetHTML();
                 setupHTML();
-                setupWave();
+
                 state = "running";
             }
         }
@@ -180,18 +204,14 @@ function getNode(row, col) {
     return document.getElementById(row+" "+col)
 }
 
-function getTile(row, col) {
+function getTile(row, col, list=d.tiles) {
     // return tile on coords [row, col] or undefined
-    if(d.tiles[row]) {
-        if(d.tiles[row][col]) {
-            return d.tiles[row][col];
+    if(list[row]) {
+        if(list[row][col]) {
+            return list[row][col];
         }
     }
     return undefined;
-}
-
-function randomInt(max) {
-    return Math.floor(Math.random() * max);
 }
 
 
@@ -199,20 +219,18 @@ function randomInt(max) {
 // extract numeric r, g, b values from `rgb(nn, nn, nn)` string
 function getRgb(color) {
     let [r, g, b] = color.replace('rgb(', '')
-      .replace(')', '')
-      .split(',')
-      .map(str => Number(str));;
+        .replace(')', '')
+        .split(',')
+        .map(str => Number(str));
     return {
-      r,
-      g,
-      b
+        r, g, b
     }
-  }
-  
-  function interpolateColor(colorA, colorB, intval) {
-    const rgbA = getRgb(colorA),
-      rgbB = getRgb(colorB);
+}
+
+function interpolateColor(colorA, colorB, intval) {
+    const   rgbA = getRgb(colorA),
+            rgbB = getRgb(colorB);
     const colorVal = (prop) =>
-      Math.round(rgbA[prop] * (1 - intval) + rgbB[prop] * intval);
+        Math.round(rgbA[prop] * (1 - intval) + rgbB[prop] * intval);
     return `rgb(${colorVal('r')},${colorVal('g')},${colorVal('b')})`;
-  }
+}

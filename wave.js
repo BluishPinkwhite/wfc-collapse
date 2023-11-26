@@ -2,145 +2,65 @@
 // @author Tammie Hladilů
 // 19.11.2023
 
-let nextTile;
-
-let directions = {
-    north: {
-        value: "north",
-        opposite: "south",
-        corners: [0, 1],
-    },
-    east: {
-        value: "east",
-        opposite: "west",
-        corners: [1, 2],
-    },
-    south: {
-        value: "south",
-        opposite: "north",
-        corners: [3, 2],
-    },
-    west: {
-        value: "west",
-        opposite: "east",
-        corners: [0, 3],
-    },
-}
-
-// managed tiles are tiles waiting to be collapsed (they have calculated possibilities)
-let managedTiles = [];
-// tiles added in order to be replayed from the back (reset and removed in backwards order)
-let replayTiles = [];
 
 // fade
 let fadeAmount = 20;
 let fadeToFull = true;
 let fadeTiles = [];
 
+// replay
+let replayTiles = [];
 
-function setupWave() {
-    // setup all tiles
-    for (let rows of d.tiles) {
-        for (let tile of rows) {
-            // find neighbors in directions
-            tile.neighbors = [];
-
-            tile.neighbors['north'] = getTile(tile.row -1, tile.col);
-            tile.neighbors['east']  = getTile(tile.row, tile.col +1);
-            tile.neighbors['south'] = getTile(tile.row +1, tile.col);
-            tile.neighbors['west']  = getTile(tile.row, tile.col -1);
-        }
-    }
-
-    // choose first tile randomly
-    nextTile = getTile(randomInt(config.height), randomInt(config.width));
-    managedTiles.push(nextTile);
-    waveStep();
-}
+let simulationState = consts.simulationState.VISUALISING;
 
 
-function waveStep() {
-    setTileRandom(nextTile);
-    
-    calculations[0]++;
-}
+function applyNextChange() {
+    // remove oldest available change
+    let changes = workerChanges.shift();
 
+    if(changes) {
 
-function setTileRandom(tile) {
-    // if tile is set, find next
-    if(tile.possibilities.length == 0) {
+        // iterate through all changes of wave step
+        for (let change of changes) {
 
-        // there are (managed => any) tiles left
-        if(managedTiles.length > 0) {
-            // set first tile as lowest -> find lower
-            let lowestPossible = {
-                tile: managedTiles[0],
-                value: managedTiles[0].possibilities.length == 0 ? Infinity : managedTiles[0].possibilities.length,
+            // all changes from this simulation were applied -> start replay animation
+            if(change.command == consts.worker.WORKER_FINISHED) {
+                // removed a finish, a new worker should start in the background
+                workerFinishes--;
+                simulationState = consts.simulationState.REPLAYING;
+                console.log("Simulation ran to the end of change batch, starting replay...");
             }
-            
-            // find next tile (having lowest possibilities)
-            for (const managedTile of managedTiles) {
-                if(managedTile.possibilities.length < lowestPossible.value && managedTile.possibilities.length > 0) {
-                    lowestPossible.value = managedTile.possibilities.length;
-                    lowestPossible.tile = managedTile;
+
+            // tile has been set
+            else if(change.command == consts.changes.TILE_SET) {
+                let tile = getTile(change.coords[1], change.coords[0]);
+                tile.corners = tile.possibilities[change.index];
+                tile.possibilities = [];
+
+                fadeTiles.unshift(tile);
+                replayTiles.push(tile);
+
+                renderTile(tile);
+                updateFading();
+            }
+
+            // possibilities of tile have changed
+            else if(change.command == consts.changes.TILE_POSSIBILITIES_REDUCED) {
+                let tile = getTile(change.coords[1], change.coords[0]);
+
+                // remove all tracked indexes from possibilities of tile
+                for (const index of change.removedIndexes) {
+                    tile.possibilities.splice(index, 1);
                 }
+
+                renderTile(tile);
             }
-
-            // get all tiles with lowest possibilities
-            let lowestTiles = managedTiles.filter(tile => tile.possibilities.length == lowestPossible.value);
-        
-            // select random of the lowest tiles
-            nextTile = lowestTiles[randomInt(lowestTiles.length)];
-
-            // highlight it
-            // nextTile.div.style.background = "rgba(200,0,0,0.6)";
         }
     }
 
-    // weighted possibility select
-    let weightTotal = tile.possibilities.reduce((val, corners) => val + corners[4], 0);
-    let randomWeight = randomInt(weightTotal);
-    
-    // find the selected possibility of the random weight
-    let selectedIndex = 0;
-    while(randomWeight > 0) {
-        randomWeight -= tile.possibilities[selectedIndex][4];
-        if(randomWeight > 0) {
-            selectedIndex++;
-        }
+    else {
+        console.log("No available changes to apply, retrying next tick...");
     }
-
-    // set the tile data
-    setTile(tile, tile.possibilities[selectedIndex]);
-    renderTile(tile);
-        
-    // remove placed tile from managed tiles (all 0-possibility tiles to be sure, lmao)
-    for (let i = managedTiles.length-1; i >= 0; i--) {
-        if(managedTiles[i].possibilities == 0) {
-            managedTiles.splice(i, 1);
-        }
-    }
-}
-
-
-function setTile(tile, corners) {
-    // set tile and lock its possibilities
-    tile.corners = corners;
-    tile.possibilities = [];
-
-    // add to replay
-    replayTiles.push(tile);
-    fadeTiles.unshift(tile);
-    
-    // recalc possibilities of direct neighbors (which is then recursive)
-    for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
-        if(neighbor) {
-            recalcPossibilities(direction, neighbor);
-        }
-    }
-
-    // handle fading
-    updateFading();
 }
 
 function updateFading() {
@@ -186,96 +106,4 @@ function renderTile(tile) {
     if(tile.div.innerText.length > 0) {
         tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities.length / totalTileAmount * .75);
     }
-    
-    calculations[1]++;
-}
-
-function recalcPossibilities(direction, tile) {
-    if(!tile) {
-        return;
-    }
-
-    // tile is already set
-    if(tile.corners) {
-        tile.possibilities = [];
-        return;
-    }
-    
-    calculations[2]++;
-
-    // if tile isn't yet managed - start to manage it
-    if(!managedTiles.includes(tile)) {
-        managedTiles.push(tile);
-    }
-
-    // neighbor has a tile set -> can decrease possible tiles on this tile
-    let neighbor = tile.neighbors[directions[direction].opposite];
-
-    // neighbor exists (not over edge)
-    if(neighbor) {
-        let hasReduced = false;
-        
-        // there are non-zero and non-full possibilities - both cannot affect the result
-        if(neighbor.possibilities.length != totalTileAmount -1) {
-
-            // iterate through neighbors possibilities
-            let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities];
-
-            if(neighborLimitations.length > 0) {
-
-                // iterate through all possible tiles
-                for (let i = tile.possibilities.length-1; i >= 0; i--) {
-                    let possibleTile = tile.possibilities[i];
-
-                    // check if they align
-                    let possible = false;
-                    
-                    calculations[5] += neighbor.possibilities.length;
-                    
-                    // if corners align:
-                    // example - this uncollapsed tile north of another tile 
-                    //    -> test if some own possibility cannot align with any of the other tile
-                    //    -> test bottom's topLeft against top's bottomLeft & bottom's topRight against top's bottomRight
-                    // rotated correctly in other directions
-
-                    for (let j = neighborLimitations.length-1; j >= 0; j--) {
-                        let limitation = neighborLimitations[j];
-                        
-                        calculations[3]++;
-
-                        if(limitation[directions[direction].corners[0]] ==
-                                possibleTile[directions[directions[direction].opposite].corners[0]]
-                            &&
-                            limitation[directions[direction].corners[1]] ==
-                                possibleTile[directions[directions[direction].opposite].corners[1]]
-                            ) {
-                            possible = true;
-                            break;
-                        }
-                    }
-
-                    // no configuration for this possibility with given possibilities of neighbors can fit -> remove it
-                    if(!possible) {
-                        hasReduced = true;
-                        tile.possibilities.splice(i, 1);
-                    }
-                }
-            }
-        }
-        else {
-            calculations[4]++;
-            calculations[6] += neighbor.possibilities.length * tile.possibilities.length;
-        }
-
-        // if any possibility was removed -> recursively recalc own neighbors
-        if(hasReduced) {
-            for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
-                if(neighbor) {
-                    recalcPossibilities(direction, neighbor);
-                }
-            }
-        }
-    }
-
-    renderTile(tile);
 }
