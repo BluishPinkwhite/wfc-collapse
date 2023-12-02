@@ -38,17 +38,17 @@ var config = {
 }
 
 
-config = {
-    ...config,
+// config = {
+//     ...config,
 
-    speed: 1,
-    countdownMax: 5,
-    width: 35,
+//     speed: 1,
+//     countdownMax: 5,
+//     width: 35,
 
-    repeats: 2,
+//     repeats: 2,
 
-    waitForClick: true,
-}
+//     waitForClick: true,
+// }
 
 
 // simulation data holder
