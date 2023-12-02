@@ -17,28 +17,27 @@
 
 
 const fulls = [
-    ['grass', 'grass', 'grass', 'grass', 1800],
+    ['grass', 'grass', 'grass', 'grass', 4500],
     ['forest', 'forest', 'forest', 'forest', 600],
     ['field', 'field', 'field', 'field', 450],
     ['water', 'water', 'water', 'water', 650],
 ]
-const fullsAmount = Object.keys(fulls).length;
 
 
 const halves = [
     ...dupe(['water', 'water', 'grass', 'grass', 250]),
-    ...dupe(['forest', 'forest', 'grass', 'grass', 250]),
+    ...dupe(['forest', 'forest', 'grass', 'grass', 120]),
     ...dupe(['field', 'field', 'grass', 'grass', 250]),
     ...dupe(['path', 'path', 'grass', 'grass', 300]),
 ]
-const halvesAmount = halves.length;
 
 
 const corners = [
     ...dupe(['water', 'water', 'water', 'grass', 180]),
     ...dupe(['water', 'grass', 'grass', 'grass', 140]),
 
-    ...dupe(['forest', 'forest', 'forest', 'grass', 220]),
+    ...dupe(['forest', 'forest', 'forest', 'grass', 120]),
+    ...dupe(['forest', 'forest', 'forest', 'flower', 120]),
     ...dupe(['forest', 'grass', 'grass', 'grass', 220]),
 
     ...dupe(['path', 'grass', 'grass', 'grass', 120]),
@@ -53,19 +52,15 @@ const corners = [
 
     ...dupe(['field', 'field', 'field', 'dark_field', 40]),
 ]
-const cornersAmount = corners.length;
 
 
 const diagonals = [
-    ...dupe(['rock', 'grass', 'water', 'grass', 30]),
-    ...dupe(['forest', 'grass', 'rock', 'grass', 45]),
-    ...dupe(['forest', 'grass', 'water', 'grass', 45]),
+    // ...dupe(['rock', 'grass', 'water', 'grass', 30]),
+    // ...dupe(['forest', 'grass', 'rock', 'grass', 45]),
+    // ...dupe(['forest', 'grass', 'water', 'grass', 45]),
 ]
-const diagonalsAmount = diagonals.length;
 
 
-
-const totalTileAmount = fullsAmount + halvesAmount + cornersAmount + diagonalsAmount;
 
 const allTiles = [
     ...corners,
@@ -73,6 +68,8 @@ const allTiles = [
     ...fulls,
     ...diagonals
 ];
+const totalTileAmount = allTiles.length;
+
 
 
 const tileColors = {
@@ -105,6 +102,31 @@ const totalWeights = allTiles.reduce((val, corners) => val + corners[4], 0);
 
 let currIndex = 0;
 for (const tileData of allTiles) {
-    tileData.allIndex = currIndex;
+    tileData[5] = currIndex;
     currIndex++;
 }
+
+
+// replace all text values with indexes for faster comparing
+let indexedTiles = [];
+let indexMap = [];
+let indexingIndex = 0;
+
+for (const tile of allTiles) {
+
+    let indexedTile = [...tile];
+
+    for (let cornerIndex = 0; cornerIndex < 4; cornerIndex++) {
+        const corner = indexedTile[cornerIndex];
+        
+        if(!indexMap[corner]) {
+            indexMap[corner] = indexingIndex++;
+        }
+
+        indexedTile[cornerIndex] = indexMap[corner];
+    }
+
+    indexedTiles.push(indexedTile);
+}
+
+const allTilesIndexed = indexedTiles;

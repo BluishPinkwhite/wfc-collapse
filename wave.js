@@ -97,16 +97,16 @@ function updateFading() {
 function renderTile(tile) {
     // if tile is set
     if(tile.corners) {
-        tile.div.innerText = "";
+        tile.div.renderChance = false;
         // conic gradient in this configuration makes a 4-corner solid-color square
         tile.div.style.background = `conic-gradient(${tileColors[tile.corners[1]]} 0deg, ${tileColors[tile.corners[1]]} 90deg, ${tileColors[tile.corners[2]]} 90deg, ${tileColors[tile.corners[2]]} 180deg, ${tileColors[tile.corners[3]]} 180deg, ${tileColors[tile.corners[3]]} 270deg, ${tileColors[tile.corners[0]]} 270deg)`
     }
     // if tile is waiting to be collapsed
     else {
-        tile.div.innerText = tile.possibilities.length || "";
+        tile.div.renderChance = tile.possibilities.length > 0;
     }
 
-    if(tile.div.innerText.length > 0) {
+    if (tile.div.renderChance) {
         tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities.length / totalTileAmount * .75);
     }
 }

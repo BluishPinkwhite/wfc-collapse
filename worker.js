@@ -8,7 +8,7 @@ function workerCode() {
 
     let consts = {};
     let config = {};
-    let allTiles = [];
+    let allTilesIndexed = [];
 
     onmessage = function(ev) {
         ev = ev.data;
@@ -16,10 +16,7 @@ function workerCode() {
 
         consts = ev.consts;
         config = ev.config;
-        allTiles = ev.allTiles;
-        managedTiles = [];
-        replayTiles = [];
-        changes = [];
+        allTilesIndexed = ev.allTilesIndexed;
 
         setupWorkerTileData();
         setupWave();
@@ -59,6 +56,8 @@ function workerCode() {
     let replayTiles = [];
     // recording of changes each wave step
     let changes = [];
+    let allChanges = [];
+
 
     let statistics = {
         steps: 0,
@@ -86,7 +85,7 @@ function workerCode() {
                     row: row,
                     col: col,
 
-                    possibilities: [...allTiles],
+                    possibilities: [...allTilesIndexed],
                     corners: undefined,
                 });
             }
@@ -121,11 +120,12 @@ function workerCode() {
         }
 
         statistics.endTime = new Date().getTime();
-        statistics.totalTime = (statistics.endTime - statistics.startTime) /1000;
+        statistics.totalTime = (statistics.endTime - statistics.startTime) / 1000;
         console.log(`   Worker took ${statistics.totalTime}s`);
         
         delete statistics.endTime;
         delete statistics.startTime;
+
 
         // get number of broken tiles
         for (const row of workerTiles) {
@@ -139,7 +139,8 @@ function workerCode() {
         // when done, inform main thread
         postMessage({
             command: consts.worker.WORKER_FINISHED,
-            statistics: statistics
+            statistics,
+            allChanges
         });
 
         // stop worker
@@ -154,12 +155,10 @@ function workerCode() {
         
         statistics.steps++;
 
-        // return this step's data to main thread
-        if(changes.length > 0)
-        postMessage({
-            command: consts.worker.STEP_COMPLETE,
-            changes: changes
-        });
+        // add this step's changes to allChanges
+        if(changes.length > 0) {
+            allChanges.push(changes);
+        }
     }
 
 
@@ -236,7 +235,7 @@ function workerCode() {
         changes.push({
             command: consts.changes.TILE_SET,
             coords: [tile.col, tile.row],
-            index: tile.possibilities[index].allIndex
+            index: tile.possibilities[index][5] // allTiles index
         });
 
         // set tile and lock its possibilities
@@ -288,7 +287,7 @@ function workerCode() {
             let hasReduced = false;
             
             // there are non-zero and non-full possibilities - both cannot affect the result
-            if(neighbor.possibilities.length != allTiles.length -1) {
+            if(neighbor.possibilities.length != allTilesIndexed.length -1) {
 
                 // iterate through neighbors possibilities
                 let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities];

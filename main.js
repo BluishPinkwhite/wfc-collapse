@@ -25,13 +25,13 @@ var consts = {
 var calculations = [0,0,0,0,0,0,0];
 
 var config = {
-    height: 22,
-    width: 39,
+    height: 30,
+    width: 54,
 
     backgroundColor: 'rgb(127,255,212)',
     chanceColor: 'rgb(222,184,135)',
 
-    speed: 1000./27,
+    speed: 1000./35,
     countdownMax: 100,
 
     repeats: 1,
@@ -41,13 +41,16 @@ var config = {
 // config = {
 //     ...config,
 
-//     speed: 1,
+//     // speed: 1,
 //     countdownMax: 5,
-//     width: 35,
 
-//     repeats: 2,
+//     height: 66,
+//     width: 105,
+//     speed: 1,
 
-//     waitForClick: true,
+//     repeats: 25,
+
+//     // waitForClick: true,
 // }
 
 
@@ -92,7 +95,7 @@ function setupHTML() {
 
             // set size - square and to fit height of screen
             let val = 100./config.height;
-            div.style.width = "calc("+val+"vh - 0.8px)"; // border is 0.8px wide
+            div.style.width = val+"vh"; //"calc("+val+"vh - 0.8px)"; // border is 0.8px wide
             div.style.height = div.style.width;
 
             // getTable().style.height = "calc(100% - " + val + "vh)"; // make table smaller by one row in size
@@ -146,76 +149,76 @@ function startInterval() {
     // main simulation loop
     interval = setInterval(() => {
 
-        // simulation is generating
-        if(state == "running") {
-            if(simulationState == consts.simulationState.REPLAYING) {
-                state = "waiting";
-                countdown = config.countdownMax;
-            }
-            else {
-                for (let i = 0; i < config.repeats; i++) {
+        for (let i = 0; i < config.repeats; i++) {
+            // simulation is generating
+            if(state == "running") {
+                if(simulationState == consts.simulationState.REPLAYING) {
+                    state = "waiting";
+                    countdown = config.countdownMax;
+                }
+                else {
                     applyNextChange();
                 }
             }
-        }
 
-        // done generating, waiting for replay
-        else if(state == "waiting") {
-            if(countdown > 0) {
-                countdown--;
-                updateFading();
-            }
-            else {
-                if(!config.waitForClick) {
-                    state = "replaying";
-                    fadeTiles = [];
-                    fadeToFull = false;
-                }
-                else {
+            // done generating, waiting for replay
+            else if(state == "waiting") {
+                if(countdown > 0) {
+                    countdown--;
                     updateFading();
                 }
+                else {
+                    if(!config.waitForClick) {
+                        state = "replaying";
+                        fadeTiles = [];
+                        fadeToFull = false;
+                    }
+                    else {
+                        updateFading();
+                    }
+                }
             }
-        }
 
-        // replaying - removing from last
-        else if(state == "replaying") {
-            if(replayTiles.length > 0 && config.repeats == 1) {
-                let fadeTile = replayTiles.pop();
-                fadeTiles.unshift(fadeTile);
+            // replaying - removing from last
+            else if(state == "replaying") {
+                if(replayTiles.length > 0) {
+                    let fadeTile = replayTiles.pop();
+                    fadeTiles.unshift(fadeTile);
 
-                fadeTile.fadeIndex = 0;
+                    fadeTile.fadeIndex = 0;
 
-                updateFading();
+                    updateFading();
+                }
+                else {
+                    replayTiles = [];
+                    state = "resetting";
+                }
             }
-            else {
-                replayTiles = [];
-                state = "resetting";
+
+            // start waiting to start again
+            else if(state == "resetting") {
+                state = "cooldown";
+                countdown = config.countdownMax;
             }
-        }
 
-        // start waiting to start again
-        else if(state == "resetting") {
-            state = "cooldown";
-            countdown = config.countdownMax;
-        }
+            // wait to reset and start over
+            else if(state == "cooldown") {
+                if(countdown > 0) {
+                    countdown--;
 
-        // wait to reset and start over
-        else if(state == "cooldown") {
-            if(countdown > 0) {
-                countdown--;
+                    updateFading();
+                }
+                else {
+                    fadeToFull = true;
+                    
+                    simulationState = consts.simulationState.VISUALISING;
 
-                updateFading();
-            }
-            else {
-                fadeToFull = true;
-                
-                simulationState = consts.simulationState.VISUALISING;
+                    managedTiles = [];
+                    resetHTML();
+                    setupHTML();
 
-                managedTiles = [];
-                resetHTML();
-                setupHTML();
-
-                state = "running";
+                    state = "running";
+                }
             }
         }
     }, config.speed);

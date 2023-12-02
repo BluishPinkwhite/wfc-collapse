@@ -18,7 +18,7 @@ body {
     box-sizing: border-box;
     height: 0;
     padding: 0;
-    border: 1px solid #000;
+    /* border: 1px solid #000; */
     box-sizing: border-box;
 }
 

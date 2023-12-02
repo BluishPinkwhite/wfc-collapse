@@ -16,7 +16,7 @@ function startWorker() {
             command: consts.worker.START,
             consts,
             config,
-            allTiles
+            allTilesIndexed
         });
         // console.log('Created new worker and start message posted...');
 
@@ -24,15 +24,11 @@ function startWorker() {
         myWorker.onmessage = function(ev) {
             ev = ev.data;
 
-            // console.log('Message received from worker: ' + ev.command);
-
-            // worker step done, save data
-            if(ev.command == consts.worker.STEP_COMPLETE) {
-                workerChanges.push(ev.changes);
-            }
-
             // worker finished -> start working on next simulation
-            else if(ev.command == consts.worker.WORKER_FINISHED) {
+            if(ev.command == consts.worker.WORKER_FINISHED) {
+                
+                // get all changes from worker simulation
+                workerChanges.push(...ev.allChanges);
 
                 console.log(ev.statistics);
 
