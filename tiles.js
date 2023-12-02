@@ -101,3 +101,10 @@ function dupe(c) {
 
 
 const totalWeights = allTiles.reduce((val, corners) => val + corners[4], 0);
+
+
+let currIndex = 0;
+for (const tileData of allTiles) {
+    tileData.allIndex = currIndex;
+    currIndex++;
+}

@@ -34,6 +34,8 @@ function startWorker() {
             // worker finished -> start working on next simulation
             else if(ev.command == consts.worker.WORKER_FINISHED) {
 
+                console.log(ev.statistics);
+
                 // track finish, when below 2, start new worker
                 workerFinishes++;
                 workerChanges.push([{
@@ -42,7 +44,7 @@ function startWorker() {
 
                 // do nothing, wait till visualisation finishes to start a new worker
                 let interval = setInterval(() => {
-                    if(workerFinishes < 2) {
+                    if(workerFinishes < 10) {
                         startWorker();
                         clearInterval(interval);
                         console.log("Visualisation not throttled - starting new worker!");
@@ -50,7 +52,7 @@ function startWorker() {
                     else {
                         console.log("   Waiting for simulation to finish");
                     }
-                }, config.speed * 25);
+                }, config.speed * 25 + 10);
             }
         }
     } else {

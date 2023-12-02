@@ -33,7 +33,23 @@ var config = {
 
     speed: 1000./27,
     countdownMax: 100,
+
+    repeats: 1,
 }
+
+
+config = {
+    ...config,
+
+    speed: 1,
+    countdownMax: 5,
+    width: 35,
+
+    repeats: 2,
+
+    waitForClick: true,
+}
+
 
 // simulation data holder
 var d;
@@ -137,7 +153,9 @@ function startInterval() {
                 countdown = config.countdownMax;
             }
             else {
-                applyNextChange();
+                for (let i = 0; i < config.repeats; i++) {
+                    applyNextChange();
+                }
             }
         }
 
@@ -148,15 +166,20 @@ function startInterval() {
                 updateFading();
             }
             else {
-                state = "replaying";
-                fadeTiles = [];
-                fadeToFull = false;
+                if(!config.waitForClick) {
+                    state = "replaying";
+                    fadeTiles = [];
+                    fadeToFull = false;
+                }
+                else {
+                    updateFading();
+                }
             }
         }
 
         // replaying - removing from last
         else if(state == "replaying") {
-            if(replayTiles.length > 0) {
+            if(replayTiles.length > 0 && config.repeats == 1) {
                 let fadeTile = replayTiles.pop();
                 fadeTiles.unshift(fadeTile);
 
@@ -165,6 +188,7 @@ function startInterval() {
                 updateFading();
             }
             else {
+                replayTiles = [];
                 state = "resetting";
             }
         }
@@ -187,6 +211,7 @@ function startInterval() {
                 
                 simulationState = consts.simulationState.VISUALISING;
 
+                managedTiles = [];
                 resetHTML();
                 setupHTML();
 
@@ -194,6 +219,17 @@ function startInterval() {
             }
         }
     }, config.speed);
+}
+
+
+function resumePlay() {
+    if(config.waitForClick) {
+        setTimeout(() => {
+            config.waitForClick = true;
+        }, config.speed * 3 + 10);
+        
+        config.waitForClick = false;
+    }
 }
 
 function getTable() {

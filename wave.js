@@ -15,51 +15,54 @@ let simulationState = consts.simulationState.VISUALISING;
 
 
 function applyNextChange() {
-    // remove oldest available change
-    let changes = workerChanges.shift();
+    if(simulationState == consts.simulationState.VISUALISING) {
 
-    if(changes) {
+        // remove oldest available change
+        let changes = workerChanges.shift();
 
-        // iterate through all changes of wave step
-        for (let change of changes) {
+        if(changes) {
 
-            // all changes from this simulation were applied -> start replay animation
-            if(change.command == consts.worker.WORKER_FINISHED) {
-                // removed a finish, a new worker should start in the background
-                workerFinishes--;
-                simulationState = consts.simulationState.REPLAYING;
-                console.log("Simulation ran to the end of change batch, starting replay...");
-            }
+            // iterate through all changes of wave step
+            for (let change of changes) {
 
-            // tile has been set
-            else if(change.command == consts.changes.TILE_SET) {
-                let tile = getTile(change.coords[1], change.coords[0]);
-                tile.corners = tile.possibilities[change.index];
-                tile.possibilities = [];
-
-                fadeTiles.unshift(tile);
-                replayTiles.push(tile);
-
-                renderTile(tile);
-                updateFading();
-            }
-
-            // possibilities of tile have changed
-            else if(change.command == consts.changes.TILE_POSSIBILITIES_REDUCED) {
-                let tile = getTile(change.coords[1], change.coords[0]);
-
-                // remove all tracked indexes from possibilities of tile
-                for (const index of change.removedIndexes) {
-                    tile.possibilities.splice(index, 1);
+                // all changes from this simulation were applied -> start replay animation
+                if(change.command == consts.worker.WORKER_FINISHED) {
+                    // removed a finish, a new worker should start in the background
+                    workerFinishes--;
+                    simulationState = consts.simulationState.REPLAYING;
+                    console.log("Simulation ran to the end of change batch, starting replay...");
                 }
 
-                renderTile(tile);
+                // tile has been set
+                else if(change.command == consts.changes.TILE_SET) {
+                    let tile = getTile(change.coords[1], change.coords[0]);
+                    tile.corners = allTiles[change.index];
+                    tile.possibilities = [];
+
+                    fadeTiles.unshift(tile);
+                    replayTiles.push(tile);
+
+                    renderTile(tile);
+                    updateFading();
+                }
+
+                // possibilities of tile have changed
+                else if(change.command == consts.changes.TILE_POSSIBILITIES_REDUCED) {
+                    let tile = getTile(change.coords[1], change.coords[0]);
+
+                    // remove all tracked indexes from possibilities of tile
+                    for (const index of change.removedIndexes) {
+                        tile.possibilities.splice(index, 1);
+                    }
+
+                    renderTile(tile);
+                }
             }
         }
-    }
 
-    else {
-        console.log("No available changes to apply, retrying next tick...");
+        else {
+            console.log("No available changes to apply, retrying next tick...");
+        }
     }
 }
 

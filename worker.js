@@ -17,6 +17,9 @@ function workerCode() {
         consts = ev.consts;
         config = ev.config;
         allTiles = ev.allTiles;
+        managedTiles = [];
+        replayTiles = [];
+        changes = [];
 
         setupWorkerTileData();
         setupWave();
@@ -58,10 +61,11 @@ function workerCode() {
     let changes = [];
 
     let statistics = {
-        totalSteps: 0,
-        totalPossibilityRecalculations: 0,
-        skippedNeighbors: 0,
+        steps: 0,
+        brokenTiles: 0,
+        possibilityRecalcs: 0,
         limitationChecks: 0,
+        skippedNeighbors: 0,
         startTime: new Date().getTime(),
         endTime: -1,
         totalTime: -1,
@@ -107,6 +111,7 @@ function workerCode() {
 
         // choose first tile randomly
         nextTile = getTile(randomInt(config.height), randomInt(config.width), workerTiles);
+
         managedTiles.push(nextTile);
 
 
@@ -115,15 +120,27 @@ function workerCode() {
             waveStep();
         }
 
+        statistics.endTime = new Date().getTime();
+        statistics.totalTime = (statistics.endTime - statistics.startTime) /1000;
+        console.log(`   Worker took ${statistics.totalTime}s`);
+        
+        delete statistics.endTime;
+        delete statistics.startTime;
+
+        // get number of broken tiles
+        for (const row of workerTiles) {
+            for(const tile of row) {
+                if(tile.corners === undefined) {
+                    statistics.brokenTiles++;
+                }
+            }
+        }
+
         // when done, inform main thread
         postMessage({
             command: consts.worker.WORKER_FINISHED,
             statistics: statistics
         });
-
-        statistics.endTime = new Date().getTime();
-        statistics.totalTime = (statistics.endTime - statistics.startTime) /1000;
-        console.log(`   Worker took ${statistics.totalTime}s`);
 
         // stop worker
         close();
@@ -135,7 +152,7 @@ function workerCode() {
         changes = [];
         setTileRandom(nextTile);
         
-        statistics.totalSteps++;
+        statistics.steps++;
 
         // return this step's data to main thread
         if(changes.length > 0)
@@ -173,6 +190,14 @@ function workerCode() {
                 nextTile = lowestTiles[randomInt(lowestTiles.length)];
             }
         }
+            
+        // remove placed tile from managed tiles (all 0-possibility tiles to be sure, lmao)
+        for (let i = managedTiles.length-1; i >= 0; i--) {
+            if(managedTiles[i].possibilities.length == 0) {
+                managedTiles.splice(i, 1);
+            }
+        }
+        
 
         // weighted possibility select
         let weightTotal = tile.possibilities.reduce((val, corners) => val + corners[4], 0);
@@ -187,30 +212,33 @@ function workerCode() {
             }
         }
 
-        // set the tile data
-        setTile(tile, tile.possibilities[selectedIndex], selectedIndex);
-            
-        // remove placed tile from managed tiles (all 0-possibility tiles to be sure, lmao)
-        for (let i = managedTiles.length-1; i >= 0; i--) {
-            if(managedTiles[i].possibilities == 0) {
-                managedTiles.splice(i, 1);
-            }
+        if(tile.possibilities[selectedIndex]) {
+            // set the tile data
+            setTile(tile, tile.possibilities[selectedIndex], selectedIndex);
+        }
+        // retry with new nextTile
+        else if(nextTile) {
+            setTileRandom(nextTile);
         }
     }
 
 
     function setTile(tile, corners, index) {
-        // set tile and lock its possibilities
-        tile.corners = corners;
-        tile.possibilities = [];
+
+        if(!corners) {
+            return;
+        }
 
         // add new change - tile at coords has been set to corners
-        if(corners)
         changes.push({
             command: consts.changes.TILE_SET,
             coords: [tile.col, tile.row],
-            index: index
+            index: tile.possibilities[index].allIndex
         });
+
+        // set tile and lock its possibilities
+        tile.corners = corners;
+        tile.possibilities = [];
 
         // add to replay
         replayTiles.push(tile);
@@ -218,23 +246,28 @@ function workerCode() {
         // recalc possibilities of direct neighbors (which is then recursive)
         for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
             if(neighbor) {
-                recalcPossibilities(direction, neighbor);
+                recalcPossibilities(direction, neighbor, tile);
             }
         }
     }
 
 
-    function recalcPossibilities(direction, tile) {
+    function recalcPossibilities(direction, tile, startTile) {
         if(!tile) {
             return;
         }
 
         // tile is already set
         if(tile.corners) {
+            tile.possibilities = [];
+
+            if(managedTiles.includes(tile)) {
+                managedTiles.splice(managedTiles.indexOf(tile), 1);
+            }
             return;
         }
         
-        statistics.totalPossibilityRecalculations++;
+        statistics.possibilityRecalcs++;
 
         // if tile isn't yet managed - start to manage it
         if(!managedTiles.includes(tile)) {
@@ -314,7 +347,7 @@ function workerCode() {
 
                 for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
                     if(neighbor) {
-                        recalcPossibilities(direction, neighbor);
+                        recalcPossibilities(direction, neighbor, startTile);
                     }
                 }
             }
