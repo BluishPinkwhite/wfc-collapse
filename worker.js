@@ -190,6 +190,9 @@ function workerCode() {
                 nextTile = lowestTiles[randomInt(lowestTiles.length)];
             }
         }
+        else {
+            nextTile = tile;
+        }
             
         // remove placed tile from managed tiles (all 0-possibility tiles to be sure, lmao)
         for (let i = managedTiles.length-1; i >= 0; i--) {
@@ -198,27 +201,27 @@ function workerCode() {
             }
         }
         
+        // simulation ended or something went horribly wrong :D
+        if(!nextTile) {
+            return;
+        }
 
         // weighted possibility select
-        let weightTotal = tile.possibilities.reduce((val, corners) => val + corners[4], 0);
+        let weightTotal = nextTile.possibilities.reduce((val, corners) => val + corners[4], 0);
         let randomWeight = randomInt(weightTotal);
         
         // find the selected possibility of the random weight
         let selectedIndex = 0;
         while(randomWeight > 0) {
-            randomWeight -= tile.possibilities[selectedIndex][4];
+            randomWeight -= nextTile.possibilities[selectedIndex][4];
             if(randomWeight > 0) {
                 selectedIndex++;
             }
         }
 
-        if(tile.possibilities[selectedIndex]) {
+        if(nextTile.possibilities[selectedIndex]) {
             // set the tile data
-            setTile(tile, tile.possibilities[selectedIndex], selectedIndex);
-        }
-        // retry with new nextTile
-        else if(nextTile) {
-            setTileRandom(nextTile);
+            setTile(nextTile, nextTile.possibilities[selectedIndex], selectedIndex);
         }
     }
 
@@ -252,7 +255,7 @@ function workerCode() {
     }
 
 
-    function recalcPossibilities(direction, tile, startTile) {
+    function recalcPossibilities(direction, tile) {
         if(!tile) {
             return;
         }
@@ -347,7 +350,7 @@ function workerCode() {
 
                 for (const [direction, neighbor] of Object.entries(tile.neighbors)) {
                     if(neighbor) {
-                        recalcPossibilities(direction, neighbor, startTile);
+                        recalcPossibilities(direction, neighbor);
                     }
                 }
             }
