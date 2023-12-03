@@ -8,6 +8,7 @@ var consts = {
         START: 100,
         STEP_COMPLETE: 101,
         WORKER_FINISHED: 102,
+        FORCE_STOP: 103,
     },
     changes: {
         TILE_SET: 200,
@@ -22,7 +23,7 @@ var consts = {
         FULL_COLOR: 400,
         HALF_COLOR: 401,
         ONE_CORNER: 402,
-        TWO_CORNERS: 403,
+        DIAGONALS: 403,
     }
 }
 
@@ -44,20 +45,19 @@ var config = {
 }
 
 
-config = {
-    ...config,
+// config = {
+//     ...config,
 
-    // speed: 1,
-    // countdownMax: 5,
+//     speed: 1,
+//     countdownMax: 5,
 
-    // height: 15,
-    // width: 20,
-    // speed: 1,
+//     // height: 15,
+//     // width: 20,
 
-    // repeats: 25,
+//     repeats: 5,
 
-    // waitForClick: true,
-}
+//     waitForClick: true,
+// }
 
 
 // simulation data holder
@@ -80,6 +80,19 @@ let interval;
 function start() {
     resetHTML();
     setupHTML();
+
+    // stop all workers and delete their previous data
+    for (const worker of activeWorkers) {
+        worker.postMessage({
+            command: consts.worker.FORCE_STOP
+        });
+    }
+    workerChanges = [];
+    workerFinishes = 0;
+
+    if(!newWorkerWaiting) {
+        startWorker();
+    }
 
     restartInterval();
 }

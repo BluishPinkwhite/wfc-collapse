@@ -16,6 +16,7 @@
 // path - no full - tree branch structure
 
 
+// 4 -> [0,0,0,0]
 const fulls = [
     ['grass', 'grass', 'grass', 'grass', 4500],
     ['forest', 'forest', 'forest', 'forest', 600],
@@ -24,6 +25,7 @@ const fulls = [
 ]
 
 
+// 2x2 -> [0,0,1,1]
 const halves = [
     ...dupe(['water', 'water', 'grass', 'grass', 250]),
     ...dupe(['forest', 'forest', 'grass', 'grass', 120]),
@@ -32,6 +34,7 @@ const halves = [
 ]
 
 
+// 1x3 -> [0,0,0,1]
 const corners = [
     ...dupe(['water', 'water', 'water', 'grass', 180]),
     ...dupe(['water', 'grass', 'grass', 'grass', 140]),
@@ -54,8 +57,9 @@ const corners = [
 ]
 
 
+// 1x2x1 -> [0,1,2,1]
 const diagonals = [
-    ...dupe(['rock', 'grass', 'water', 'grass', 30]),
+    // ...dupe(['rock', 'grass', 'water', 'grass', 30]),
     ...dupe(['forest', 'grass', 'rock', 'grass', 45]),
     ...dupe(['forest', 'grass', 'water', 'grass', 45]),
 ]
@@ -81,7 +85,7 @@ let allTiles = [
     ...corners,
     ...halves,
     ...fulls,
-    ...diagonals
+    ...diagonals,
 ];
 const totalTileAmount = allTiles.length;
 
@@ -109,6 +113,23 @@ let tileTypeIndex = 0;
 
 for (let i = 0; i < allTiles.length; i++) {
     let tileData = allTiles.shift();
+
+    // get original array it came from
+    if (fulls.includes(tileData)) {
+        arrayName = 'fulls';
+    }
+    else if (halves.includes(tileData)) {
+        arrayName = 'halves';
+    }
+    else if (corners.includes(tileData)) {
+        arrayName = 'corners';
+    }
+    else if (diagonals.includes(tileData)) {
+        arrayName = 'diagonals';
+    }
+
+
+    // refactor data to object
     tileData = {
         corners: [tileData[0], tileData[1], tileData[2], tileData[3]],
         weight: tileData[4],
@@ -129,53 +150,62 @@ for (let i = 0; i < allTiles.length; i++) {
         tileData.corners[cornerIndex] = indexMap[corner];
     }
 
-    allTiles.push(tileData);
-}
-
-// assign extra info for tiles
-for (const tileData of fulls) {
-    tileData.renderingStrategy = consts.renderingStrategy.FULL_COLOR;
-}
-for (const tileData of halves) {
-    tileData.renderingStrategy = consts.renderingStrategy.HALF_COLOR;
-
-    // decide whether it is horizontal or vertical
-    if (tileData[0] == tileData[1]) {
-        // horizontal
-        tileData.renderingOffset = 0;
+    // get rendering strategy
+    if(arrayName == 'fulls') {
+        tileData.renderingStrategy = consts.renderingStrategy.FULL_COLOR;
     }
-    else {
-        // vertical
-        tileData.renderingOffset = 1;
-    }
-}
-for (const tileData of corners) {
-    tileData.renderingStrategy = consts.renderingStrategy.ONE_CORNER;
+    else if(arrayName == 'halves') {
+        tileData.renderingStrategy = consts.renderingStrategy.HALF_COLOR;
 
-    // find index of other-type corner
-    let firstType = {type: tileData[0], amount: 1};
-    let otherType = {type: tileData[1], index: 1};
-    
-    for (let i = 1; i < tileData.length; i++) {
-        const corner = tileData[i];
-        
-        if(corner == firstType.type) {
-            firstType.amount++;
+        // decide whether it is horizontal or vertical
+        if (tileData.corners[0] == tileData.corners[1]) {
+            tileData.renderingOffset = 0; // horizontal
         }
         else {
-            otherType.type = corner;
-            otherType.index = i;
+            tileData.renderingOffset = 1; // vertical
+        }
+    }
+    // 1x3 corners
+    else if(arrayName == 'corners') {
+        tileData.renderingStrategy = consts.renderingStrategy.ONE_CORNER;
+
+        // find index of other-type corner
+        let firstType = {type: tileData.corners[0], amount: 1};
+        let otherType = {type: tileData.corners[1], index: 1};
+        
+        for (let i = 1; i < tileData.corners.length; i++) {
+            const corner = tileData.corners[i];
+            
+            // single corner chosen at first
+            if(corner == firstType.type) {
+                firstType.amount++;
+            }
+            // other corner is chosen
+            else {
+                otherType.type = corner;
+                otherType.index = i;
+            }
+        }
+
+        if(firstType.amount == 1) {
+            tileData.renderingOffset = 0;
+        }
+        else {
+            tileData.renderingOffset = otherType.index;
+        }
+    }
+    // 1x2x1 diagonals
+    else if(arrayName == 'diagonals') {
+        tileData.renderingStrategy = consts.renderingStrategy.DIAGONALS;
+
+        if(tileData.corners[0] == tileData.corners[2]) {
+            tileData.renderingOffset = 1;
+        }
+        else {
+            tileData.renderingOffset = 0;
         }
     }
 
-    if(firstType.amount == 1) {
-        tileData.renderingOffset = 0;
-    }
-    else {
-        tileData.renderingOffset = otherType.index;
-    }
-}
-for (const tileData of diagonals) {
-    tileData.renderingStrategy = consts.renderingStrategy.TWO_CORNERS;
+    allTiles.push(tileData);
 }
 

@@ -34,26 +34,35 @@ function applyNextChange() {
                 }
 
                 // tile has been set
-                else if(change.command == consts.changes.TILE_SET) {
-                    let tile = getTile(change.coords[1], change.coords[0]);
-                    tile.corners = allTiles[change.index].corners;
-                    tile.possibilities = 0;
-
-                    fadeTiles.unshift(tile);
-                    replayTiles.push(tile);
-
-                    renderTile(tile);
-                    updateFading();
-                }
-
-                // possibilities of tile have changed
-                else if(change.command == consts.changes.TILE_POSSIBILITIES_REDUCED) {
+                else {
                     let tile = getTile(change.coords[1], change.coords[0]);
 
-                    // remove all tracked indexes from possibilities of tile
-                    tile.possibilities -= change.removedIndexes;
+                    // when canvas size was changed at runtime -> speed through invalid instructions
+                    if(!tile) {
+                        applyNextChange();
+                        return;
+                    }
 
-                    renderTile(tile);
+                    if(change.command == consts.changes.TILE_SET) {
+                        // set data of tile
+                        tile.corners = allTiles[change.index].corners;
+                        tile.absoluteIndex = change.index;
+                        tile.possibilities = 0;
+
+                        fadeTiles.unshift(tile);
+                        replayTiles.push(tile);
+
+                        renderTile(tile);
+                        updateFading();
+                    }
+
+                    // possibilities of tile have changed
+                    else if(change.command == consts.changes.TILE_POSSIBILITIES_REDUCED) {
+                        // remove all tracked indexes from possibilities of tile
+                        tile.possibilities -= change.removedIndexes;
+
+                        renderTile(tile);
+                    }
                 }
             }
         }
@@ -92,23 +101,77 @@ function updateFading() {
     }
 }
 
+
+
+// used in renderTile
+const cornerToGradientPosition = [
+    'top left',
+    'top right',
+    'bottom right',
+    'bottom left',
+]
+
+
 function renderTile(tile) {
     // if tile is set
     if(tile.corners) {
         tile.div.renderChance = false;
-        // conic gradient in this configuration makes a 4-corner solid-color square
-        tile.div.style.background = 
-        // `
-        // radial-gradient(circle at top left, ${tileColors[tile.corners[0]]} 0%, ${tileColors[tile.corners[0]]} 49%, ${tileColors[tile.corners[2]]} 50%)
-        // `
-        `conic-gradient(
-            ${color(tile, 1)} 0deg, 
-            ${color(tile, 1)} 90deg, 
-            ${color(tile, 2)} 90deg, 
-            ${color(tile, 2)} 180deg, 
-            ${color(tile, 3)} 180deg, 
-            ${color(tile, 3)} 270deg, 
-            ${color(tile, 0)} 270deg)`
+
+        // apply rendering strategy
+        let renderingStrategy = allTiles[tile.absoluteIndex].renderingStrategy;
+        let renderingOffset = allTiles[tile.absoluteIndex].renderingOffset;
+        
+        // full color tile
+        if(renderingStrategy == consts.renderingStrategy.FULL_COLOR) {
+            tile.div.style.background = color(tile, 0);
+        }
+        // half color tile (split in half)
+        else if(renderingStrategy == consts.renderingStrategy.HALF_COLOR) {
+            tile.div.style.background = `
+            linear-gradient(${renderingOffset == 0 ? 0 : 270}deg,
+                ${color(tile, 2)} 50%,
+                ${color(tile, 0)} 50%
+            )`;
+        }
+        // one corner tile
+        else if(renderingStrategy == consts.renderingStrategy.ONE_CORNER) {
+            tile.div.style.background = `
+            radial-gradient(
+                circle at ${cornerToGradientPosition[renderingOffset]}, 
+                    ${color(tile, renderingOffset)} 0%, 
+                    ${color(tile, renderingOffset)} 35%, 
+                    ${color(tile, (renderingOffset+2) % 4)} 35%
+            )`;
+        }
+        // diagonal tiles
+        else if(renderingStrategy == consts.renderingStrategy.DIAGONALS) {
+            tile.div.style.background = `
+            radial-gradient(
+                circle at ${cornerToGradientPosition[renderingOffset]}, 
+                    ${color(tile, renderingOffset)} 0%, 
+                    ${color(tile, renderingOffset)} 35%, 
+                    transparent 35%
+            ),
+            radial-gradient(
+                circle at ${cornerToGradientPosition[renderingOffset+2]}, 
+                    ${color(tile, renderingOffset+2)} 0%, 
+                    ${color(tile, renderingOffset+2)} 35%, 
+                    transparent 35%
+            ),
+            linear-gradient(${color(tile, renderingOffset+1)} 0%, ${color(tile, renderingOffset+1)} 0%)`;
+        }
+        else {
+            tile.div.style.background = `
+            conic-gradient(
+                ${color(tile, 1)} 0deg, 
+                ${color(tile, 1)} 90deg, 
+                ${color(tile, 2)} 90deg, 
+                ${color(tile, 2)} 180deg, 
+                ${color(tile, 3)} 180deg, 
+                ${color(tile, 3)} 270deg, 
+                ${color(tile, 0)} 270deg
+            )`;
+        }
     }
     // if tile is waiting to be collapsed
     else {
