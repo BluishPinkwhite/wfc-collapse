@@ -36,8 +36,8 @@ function applyNextChange() {
                 // tile has been set
                 else if(change.command == consts.changes.TILE_SET) {
                     let tile = getTile(change.coords[1], change.coords[0]);
-                    tile.corners = allTiles[change.index];
-                    tile.possibilities = [];
+                    tile.corners = allTiles[change.index].corners;
+                    tile.possibilities = 0;
 
                     fadeTiles.unshift(tile);
                     replayTiles.push(tile);
@@ -51,9 +51,7 @@ function applyNextChange() {
                     let tile = getTile(change.coords[1], change.coords[0]);
 
                     // remove all tracked indexes from possibilities of tile
-                    for (const index of change.removedIndexes) {
-                        tile.possibilities.splice(index, 1);
-                    }
+                    tile.possibilities -= change.removedIndexes;
 
                     renderTile(tile);
                 }
@@ -99,14 +97,29 @@ function renderTile(tile) {
     if(tile.corners) {
         tile.div.renderChance = false;
         // conic gradient in this configuration makes a 4-corner solid-color square
-        tile.div.style.background = `conic-gradient(${tileColors[tile.corners[1]]} 0deg, ${tileColors[tile.corners[1]]} 90deg, ${tileColors[tile.corners[2]]} 90deg, ${tileColors[tile.corners[2]]} 180deg, ${tileColors[tile.corners[3]]} 180deg, ${tileColors[tile.corners[3]]} 270deg, ${tileColors[tile.corners[0]]} 270deg)`
+        tile.div.style.background = 
+        // `
+        // radial-gradient(circle at top left, ${tileColors[tile.corners[0]]} 0%, ${tileColors[tile.corners[0]]} 49%, ${tileColors[tile.corners[2]]} 50%)
+        // `
+        `conic-gradient(
+            ${color(tile, 1)} 0deg, 
+            ${color(tile, 1)} 90deg, 
+            ${color(tile, 2)} 90deg, 
+            ${color(tile, 2)} 180deg, 
+            ${color(tile, 3)} 180deg, 
+            ${color(tile, 3)} 270deg, 
+            ${color(tile, 0)} 270deg)`
     }
     // if tile is waiting to be collapsed
     else {
-        tile.div.renderChance = tile.possibilities.length > 0;
+        tile.div.renderChance = tile.possibilities > 0;
     }
 
     if (tile.div.renderChance) {
-        tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities.length / totalTileAmount * .75);
+        tile.div.style.background = interpolateColor(config.chanceColor, config.backgroundColor, tile.possibilities / totalTileAmount * .75);
     }
+}
+
+function color(tile, cornerIndex) {
+    return tileColors[indexMap[tile.corners[cornerIndex]]];
 }

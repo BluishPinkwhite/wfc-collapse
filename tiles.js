@@ -55,21 +55,10 @@ const corners = [
 
 
 const diagonals = [
-    // ...dupe(['rock', 'grass', 'water', 'grass', 30]),
-    // ...dupe(['forest', 'grass', 'rock', 'grass', 45]),
-    // ...dupe(['forest', 'grass', 'water', 'grass', 45]),
+    ...dupe(['rock', 'grass', 'water', 'grass', 30]),
+    ...dupe(['forest', 'grass', 'rock', 'grass', 45]),
+    ...dupe(['forest', 'grass', 'water', 'grass', 45]),
 ]
-
-
-
-const allTiles = [
-    ...corners,
-    ...halves,
-    ...fulls,
-    ...diagonals
-];
-const totalTileAmount = allTiles.length;
-
 
 
 const tileColors = {
@@ -83,6 +72,18 @@ const tileColors = {
     dark_field: "#FF9812",
     path: "#BB9865",
 }
+
+
+///////////////////////
+
+
+let allTiles = [
+    ...corners,
+    ...halves,
+    ...fulls,
+    ...diagonals
+];
+const totalTileAmount = allTiles.length;
 
 
 
@@ -100,33 +101,81 @@ function dupe(c) {
 const totalWeights = allTiles.reduce((val, corners) => val + corners[4], 0);
 
 
+// index tiles -> store their absolute 'allTiles' index in them
+// refactor tileData to objects
 let currIndex = 0;
-for (const tileData of allTiles) {
-    tileData[5] = currIndex;
-    currIndex++;
-}
-
-
-// replace all text values with indexes for faster comparing
-let indexedTiles = [];
 let indexMap = [];
-let indexingIndex = 0;
+let tileTypeIndex = 0;
 
-for (const tile of allTiles) {
+for (let i = 0; i < allTiles.length; i++) {
+    let tileData = allTiles.shift();
+    tileData = {
+        corners: [tileData[0], tileData[1], tileData[2], tileData[3]],
+        weight: tileData[4],
+        absoluteIndex: currIndex
+    };
+    currIndex++;
 
-    let indexedTile = [...tile];
-
+    // replace corners with indexes
     for (let cornerIndex = 0; cornerIndex < 4; cornerIndex++) {
-        const corner = indexedTile[cornerIndex];
+        const corner = tileData.corners[cornerIndex];
         
         if(!indexMap[corner]) {
-            indexMap[corner] = indexingIndex++;
+            indexMap[corner] = tileTypeIndex;
+            indexMap[tileTypeIndex] = corner;
+            tileTypeIndex++;
         }
 
-        indexedTile[cornerIndex] = indexMap[corner];
+        tileData.corners[cornerIndex] = indexMap[corner];
     }
 
-    indexedTiles.push(indexedTile);
+    allTiles.push(tileData);
 }
 
-const allTilesIndexed = indexedTiles;
+// assign extra info for tiles
+for (const tileData of fulls) {
+    tileData.renderingStrategy = consts.renderingStrategy.FULL_COLOR;
+}
+for (const tileData of halves) {
+    tileData.renderingStrategy = consts.renderingStrategy.HALF_COLOR;
+
+    // decide whether it is horizontal or vertical
+    if (tileData[0] == tileData[1]) {
+        // horizontal
+        tileData.renderingOffset = 0;
+    }
+    else {
+        // vertical
+        tileData.renderingOffset = 1;
+    }
+}
+for (const tileData of corners) {
+    tileData.renderingStrategy = consts.renderingStrategy.ONE_CORNER;
+
+    // find index of other-type corner
+    let firstType = {type: tileData[0], amount: 1};
+    let otherType = {type: tileData[1], index: 1};
+    
+    for (let i = 1; i < tileData.length; i++) {
+        const corner = tileData[i];
+        
+        if(corner == firstType.type) {
+            firstType.amount++;
+        }
+        else {
+            otherType.type = corner;
+            otherType.index = i;
+        }
+    }
+
+    if(firstType.amount == 1) {
+        tileData.renderingOffset = 0;
+    }
+    else {
+        tileData.renderingOffset = otherType.index;
+    }
+}
+for (const tileData of diagonals) {
+    tileData.renderingStrategy = consts.renderingStrategy.TWO_CORNERS;
+}
+

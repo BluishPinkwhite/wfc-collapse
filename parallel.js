@@ -16,7 +16,7 @@ function startWorker() {
             command: consts.worker.START,
             consts,
             config,
-            allTilesIndexed
+            allTiles
         });
         // console.log('Created new worker and start message posted...');
 
@@ -41,6 +41,8 @@ function startWorker() {
                 // do nothing, wait till visualisation finishes to start a new worker
                 let interval = setInterval(() => {
                     if(workerFinishes < 2) {
+                        newWorkerLocked = true;
+
                         startWorker();
                         clearInterval(interval);
                         console.log("Visualisation not throttled - starting new worker!");

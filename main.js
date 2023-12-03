@@ -17,6 +17,12 @@ var consts = {
     simulationState: {
         VISUALISING: 300,
         REPLAYING: 301,
+    },
+    renderingStrategy: {
+        FULL_COLOR: 400,
+        HALF_COLOR: 401,
+        ONE_CORNER: 402,
+        TWO_CORNERS: 403,
     }
 }
 
@@ -38,20 +44,20 @@ var config = {
 }
 
 
-// config = {
-//     ...config,
+config = {
+    ...config,
 
-//     // speed: 1,
-//     countdownMax: 5,
+    // speed: 1,
+    // countdownMax: 5,
 
-//     height: 66,
-//     width: 105,
-//     speed: 1,
+    // height: 15,
+    // width: 20,
+    // speed: 1,
 
-//     repeats: 25,
+    // repeats: 25,
 
-//     // waitForClick: true,
-// }
+    // waitForClick: true,
+}
 
 
 // simulation data holder
@@ -111,7 +117,7 @@ function setupHTML() {
 
                 fadeIndex: 0,
 
-                possibilities: [...allTiles],
+                possibilities: totalTileAmount,
                 corners: undefined,
             });
         }

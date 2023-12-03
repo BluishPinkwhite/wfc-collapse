@@ -8,7 +8,7 @@ function workerCode() {
 
     let consts = {};
     let config = {};
-    let allTilesIndexed = [];
+    let allTiles = [];
 
     onmessage = function(ev) {
         ev = ev.data;
@@ -16,7 +16,7 @@ function workerCode() {
 
         consts = ev.consts;
         config = ev.config;
-        allTilesIndexed = ev.allTilesIndexed;
+        allTiles = ev.allTiles;
 
         setupWorkerTileData();
         setupWave();
@@ -85,7 +85,7 @@ function workerCode() {
                     row: row,
                     col: col,
 
-                    possibilities: [...allTilesIndexed],
+                    possibilities: [...allTiles],
                     corners: undefined,
                 });
             }
@@ -206,13 +206,13 @@ function workerCode() {
         }
 
         // weighted possibility select
-        let weightTotal = nextTile.possibilities.reduce((val, corners) => val + corners[4], 0);
+        let weightTotal = nextTile.possibilities.reduce((val, tileData) => val + tileData.weight, 0);
         let randomWeight = randomInt(weightTotal);
         
         // find the selected possibility of the random weight
         let selectedIndex = 0;
         while(randomWeight > 0) {
-            randomWeight -= nextTile.possibilities[selectedIndex][4];
+            randomWeight -= nextTile.possibilities[selectedIndex].weight;
             if(randomWeight > 0) {
                 selectedIndex++;
             }
@@ -220,7 +220,7 @@ function workerCode() {
 
         if(nextTile.possibilities[selectedIndex]) {
             // set the tile data
-            setTile(nextTile, nextTile.possibilities[selectedIndex], selectedIndex);
+            setTile(nextTile, nextTile.possibilities[selectedIndex].corners, selectedIndex);
         }
     }
 
@@ -235,7 +235,7 @@ function workerCode() {
         changes.push({
             command: consts.changes.TILE_SET,
             coords: [tile.col, tile.row],
-            index: tile.possibilities[index][5] // allTiles index
+            index: tile.possibilities[index].absoluteIndex
         });
 
         // set tile and lock its possibilities
@@ -261,11 +261,6 @@ function workerCode() {
 
         // tile is already set
         if(tile.corners) {
-            tile.possibilities = [];
-
-            if(managedTiles.includes(tile)) {
-                managedTiles.splice(managedTiles.indexOf(tile), 1);
-            }
             return;
         }
         
@@ -279,24 +274,24 @@ function workerCode() {
         // neighbor has a tile set -> can decrease possible tiles on this tile
         let neighbor = tile.neighbors[directions[direction].opposite];
 
-        // tracks all possibility indexes which got removed
-        let changeReductionIndexes = [];
+        // tracks all possibility indexes which got removed -> amount of removed indexes
+        let changeReductionIndexes = 0;
 
         // neighbor exists (not over edge)
         if(neighbor) {
             let hasReduced = false;
             
             // there are non-zero and non-full possibilities - both cannot affect the result
-            if(neighbor.possibilities.length != allTilesIndexed.length -1) {
+            if(neighbor.possibilities.length != allTiles.length -1) {
 
                 // iterate through neighbors possibilities
-                let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities];
+                let neighborLimitations = [...neighbor.corners?[neighbor.corners]:[], ...neighbor.possibilities.map((tileData) => tileData.corners)];
 
                 if(neighborLimitations.length > 0) {
 
                     // iterate through all possible tiles
                     for (let i = tile.possibilities.length-1; i >= 0; i--) {
-                        let possibleTile = tile.possibilities[i];
+                        let possibleTile = tile.possibilities[i].corners;
 
                         // check if they align
                         let possible = false;
@@ -329,7 +324,7 @@ function workerCode() {
                             tile.possibilities.splice(i, 1);
 
                             // track change - possibility index removed
-                            changeReductionIndexes.push(i);
+                            changeReductionIndexes++;
                         }
                     }
                 }
