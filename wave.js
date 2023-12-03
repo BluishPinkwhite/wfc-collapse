@@ -4,7 +4,7 @@
 
 
 // fade
-let fadeAmount = 20;
+let fadeAmount = 15;
 let fadeToFull = true;
 let fadeTiles = [];
 
@@ -85,6 +85,9 @@ function updateFading() {
             1 - (fadeAmount - fadeTile.fadeIndex) / fadeAmount : 
             (fadeAmount - fadeTile.fadeIndex)/ fadeAmount;
 
+        // better fading -> set td chance color so div color jump is invisible
+        fadeTile.div.parentElement.style.backgroundColor = !fadeToFull ? config.backgroundColor : config.chanceColor;
+
         // increase fade
         fadeTile.fadeIndex++;
 
@@ -94,6 +97,7 @@ function updateFading() {
 
             if(!fadeToFull) {
                 fadeTile.div.style.background = "";
+                fadeTile.div.parentElement.style.background = "";
             }
 
             fadeTiles.splice(i, 1);
