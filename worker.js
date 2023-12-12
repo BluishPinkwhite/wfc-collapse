@@ -12,7 +12,6 @@ function workerCode() {
 
     onmessage = function(ev) {
         ev = ev.data;
-        // console.log("Worker received message: " + ev.command);
 
         consts = ev.consts;
         config = ev.config;

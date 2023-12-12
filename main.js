@@ -130,7 +130,7 @@ function setupHTML() {
 
                 fadeIndex: 0,
 
-                possibilities: totalTileAmount,
+                possibilities: tileSet.totalTileAmount,
                 corners: undefined,
             });
         }

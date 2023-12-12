@@ -22,7 +22,7 @@ function startWorker() {
             command: consts.worker.START,
             consts,
             config,
-            allTiles
+            allTiles: tileSet.tiles
         });
 
 
@@ -47,7 +47,7 @@ function startWorker() {
 
                 // do nothing, wait till visualisation finishes to start a new worker
                 let interval = setInterval(() => {
-                    if(workerFinishes < 2) {
+                    if(workerFinishes < 1) {
                         newWorkerWaiting = false;
 
                         startWorker();
